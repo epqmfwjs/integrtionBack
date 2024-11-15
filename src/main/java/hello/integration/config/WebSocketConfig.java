@@ -14,7 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket 엔드포인트 설정
         registry.addEndpoint("/ws")  // WebSocket 연결 엔드포인트
-                .setAllowedOrigins("http://localhost:3000")  // React 앱의 주소
+                .setAllowedOrigins("http://localhost:3000","http://gogolckh.ddns.net:10","http://gogolckh.ddns.net:8010")  // React 앱의 주소
                 .withSockJS();  // SockJS 지원 활성화
     }
 
