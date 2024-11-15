@@ -18,7 +18,9 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/member")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5000"}) // React 앱의 주소
+//@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5000"}) // React 앱의 주소
+//@CrossOrigin(origins = {"http://gogolckh.ddns.net:3000", "http://gogolckh.ddns.net:5000"}) // React 앱의 주소
+@CrossOrigin(origins = {"http://gogolckh.ddns.net:8010"}) // React 앱의 주소
 @Slf4j
 public class MemberController {
 
