@@ -17,11 +17,16 @@ public class Member {
     private String nickname;
 
     @Column
-    private String password;
+    private int characterId;
+
+    @Column
+    private String modelPath;
 
     @Builder
-    public Member(String nickname,String password) {
+
+    public Member(String nickname, int characterId, String modelPath) {
         this.nickname = nickname;
-        this.password = password;
+        this.characterId = characterId;
+        this.modelPath = modelPath;
     }
 }
