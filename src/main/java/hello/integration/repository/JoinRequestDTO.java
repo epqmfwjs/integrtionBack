@@ -11,5 +11,6 @@ import lombok.ToString;
 public class JoinRequestDTO {
 
     private String nickname;
-    private String password;
+    private int characterId;
+    private String modelPath;
 }
