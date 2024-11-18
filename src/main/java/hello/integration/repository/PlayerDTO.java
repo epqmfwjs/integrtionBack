@@ -20,7 +20,6 @@ public class PlayerDTO {
     private double rotation;  // 회전 정보 추가
     private int characterId;
     private String modelPath;
-
 }
 
 
