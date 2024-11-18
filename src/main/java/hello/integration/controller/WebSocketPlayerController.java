@@ -27,7 +27,7 @@ public class WebSocketPlayerController {
     @MessageMapping("/position")
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handlePosition(PlayerDTO player, SimpMessageHeaderAccessor headerAccessor) {
-        System.out.println("보낼 플레이어 정보 : " + player.toString());
+        //System.out.println("보낼 플레이어 정보 : " + player.toString());
         String sessionId = headerAccessor.getSessionId();
         players.put(player.getNickname(), player);
         return new HashMap<>(players);
@@ -37,7 +37,7 @@ public class WebSocketPlayerController {
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handleJoin(PlayerDTO player, SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        System.out.println("받은 플레이어 정보 : " + player.toString());
+        //System.out.println("받은 플레이어 정보 : " + player.toString());
         log.info("New player joined - Session ID: {}, Nickname: {}", sessionId, player.getNickname());
 
         sessionNicknames.put(sessionId, player.getNickname());
@@ -86,11 +86,11 @@ public class WebSocketPlayerController {
     @MessageMapping("/chat")
     @SendTo("/topic/chat")
     public ChatMessage handleChat(ChatMessage message) {
-        System.out.println("들어온 챗메세지는? :" + message.toString());
+        //System.out.println("들어온 챗메세지는? :" + message.toString());
         if (message.getTimestamp() == null) {
             message.setTimestamp(System.currentTimeMillis());
         }
-        System.out.println("나가는 챗메세지는? :" + message.toString());
+        //System.out.println("나가는 챗메세지는? :" + message.toString());
         return message;
     }
 }
