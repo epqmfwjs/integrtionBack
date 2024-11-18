@@ -16,6 +16,7 @@ import lombok.Data;
 import org.springframework.http.ResponseEntity;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -43,11 +44,26 @@ public class MemberController {
     }
 
     @PostMapping("/join")
-    public ResponseEntity<?> joinOrLogin(@RequestBody Member member, HttpSession session) {  // HttpSession 추가
+    public ResponseEntity<?> joinOrLogin(@RequestBody Member member, HttpSession session) {
         try {
+            // 캐릭터가 이미 사용 중인지 다시 한번 확인
+            boolean isCharacterInUse = memberRepository.existsByCharacterId(member.getCharacterId());
+            if (isCharacterInUse) {
+                return ResponseEntity
+                        .status(HttpStatus.CONFLICT)
+                        .body("이미 사용 중인 캐릭터입니다.");
+            }
+
+            // 닉네임이 이미 사용 중인지 확인
+            if (!memberService.isNicknameAvailable(member.getNickname())) {
+                return ResponseEntity
+                        .status(HttpStatus.CONFLICT)
+                        .body("이미 사용 중인 닉네임입니다.");
+            }
+
             Member newMember = memberRepository.save(member);
 
-            // 세션에 사용자 정보 저장
+            // 세션에 정보 저장
             session.setAttribute("nickname", newMember.getNickname());
             session.setAttribute("characterId", newMember.getCharacterId());
 
@@ -67,7 +83,7 @@ public class MemberController {
 
     @GetMapping("/me")
     public ResponseEntity<JoinResponsDTO> getCurrentMember(@RequestParam String nickname, HttpSession session) {
-        System.out.println("/me 에는 옴  세션아이디는? : " + session.toString());
+        //System.out.println("/me 에는 옴  세션아이디는? : " + session.toString());
         log.info("GET /me 요청 받음");
         log.info("요청 닉네임: {}", nickname);
 
@@ -85,5 +101,23 @@ public class MemberController {
 
         log.info("응답 데이터: {}", response);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/character-status")
+    public ResponseEntity<Map<Integer, Boolean>> getCharacterStatus() {
+        Map<Integer, Boolean> status = new HashMap<>();
+
+        // 기본적으로 모든 캐릭터는 사용 가능 상태로 초기화
+        for (int i = 1; i <= 6; i++) {
+            status.put(i, false);  // false = 사용 가능
+        }
+
+        // DB에 있는 캐릭터들은 사용 중 상태로 변경
+        List<Member> members = memberRepository.findAll();
+        for (Member member : members) {
+            status.put(member.getCharacterId(), true);  // true = 사용 중
+        }
+
+        return ResponseEntity.ok(status);
     }
 }
