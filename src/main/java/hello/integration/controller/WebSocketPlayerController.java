@@ -1,14 +1,17 @@
 package hello.integration.controller;
 
 import hello.integration.repository.ChatMessage;
+import hello.integration.repository.MusicStateDTO;
 import hello.integration.repository.PlayerDTO;
 import hello.integration.domain.MemberRepository;  // 추가
 import hello.integration.service.MemberService;       // 추가
+import hello.integration.service.MusicStateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +20,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Controller
 public class WebSocketPlayerController {
+
+    // 음악 상태 관리를 위한 서비스 추가
+    @Autowired
+    private MusicStateService musicStateService;
+
+    @Autowired
+    private SimpMessagingTemplate simpMessagingTemplate;
 
     private final Map<String, PlayerDTO> players = new ConcurrentHashMap<>();
     private final Map<String, String> sessionNicknames = new ConcurrentHashMap<>();
@@ -37,8 +47,17 @@ public class WebSocketPlayerController {
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handleJoin(PlayerDTO player, SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        //System.out.println("받은 플레이어 정보 : " + player.toString());
         log.info("New player joined - Session ID: {}, Nickname: {}", sessionId, player.getNickname());
+
+        // 현재 음악 상태 전송
+        MusicStateDTO currentMusic = musicStateService.getCurrentState();
+        if (currentMusic != null) {
+            simpMessagingTemplate.convertAndSendToUser(
+                    headerAccessor.getSessionId(),
+                    "/user/queue/music",  // 경로 수정
+                    currentMusic
+            );
+        }
 
         sessionNicknames.put(sessionId, player.getNickname());
         players.put(player.getNickname(), player);
@@ -93,4 +112,5 @@ public class WebSocketPlayerController {
         //System.out.println("나가는 챗메세지는? :" + message.toString());
         return message;
     }
+
 }
