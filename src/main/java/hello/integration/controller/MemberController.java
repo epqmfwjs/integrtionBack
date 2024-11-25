@@ -7,6 +7,7 @@ import hello.integration.repository.JoinResponsDTO;
 import hello.integration.repository.NicknameCheckRequestDTO;
 import hello.integration.repository.NicknameCheckResponseDTO;
 import hello.integration.service.MemberService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import lombok.Data;
 import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +104,33 @@ public class MemberController {
         log.info("응답 데이터: {}", response);
         return ResponseEntity.ok(response);
     }
+
+
+//    @GetMapping("/me")
+//    public ResponseEntity<JoinResponsDTO> getCurrentMember(
+//            @RequestParam String nickname,
+//            HttpSession session,
+//            HttpServletResponse response) throws IOException {
+//        log.info("GET /me 요청 받음");
+//        log.info("요청 닉네임: {}", nickname);
+//
+//        Optional<Member> member = memberRepository.findByNickname(nickname);
+//        if (member.isEmpty()) {
+//            log.info("DB에서 멤버를 찾을 수 없음");
+//            // HttpServletResponse로 리다이렉트
+//            response.sendRedirect("http://gogolckh.ddns.net:10");
+//            return null;
+//        }
+//
+//        JoinResponsDTO responseDTO = JoinResponsDTO.builder()
+//                .nickname(member.get().getNickname())
+//                .characterId(member.get().getCharacterId())
+//                .modelPath(member.get().getModelPath())
+//                .build();
+//
+//        log.info("응답 데이터: {}", responseDTO);
+//        return ResponseEntity.ok(responseDTO);
+//    }
 
     @GetMapping("/character-status")
     public ResponseEntity<Map<Integer, Boolean>> getCharacterStatus() {
