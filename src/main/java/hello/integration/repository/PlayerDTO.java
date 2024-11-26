@@ -15,11 +15,12 @@ import java.util.Arrays;
 @AllArgsConstructor
 public class PlayerDTO {
     private String nickname;
-    private double[] position = new double[3]; // 기본값으로 초기화
+    private double[] position = new double[3];
     private String currentAnimation;
-    private double rotation;  // 회전 정보 추가
+    private double rotation;
     private int characterId;
     private String modelPath;
+    private long timestamp;  // 추가
 }
 
 

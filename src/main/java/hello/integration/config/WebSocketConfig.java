@@ -16,6 +16,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket 엔드포인트 설정
         registry.addEndpoint("/ws")  // WebSocket 연결 엔드포인트
+                //.setAllowedOrigins("http://localhost:3000")
                 .setAllowedOrigins(
                         "http://localhost:3000",
                         "https://gogolckh.ddns.net:10",
