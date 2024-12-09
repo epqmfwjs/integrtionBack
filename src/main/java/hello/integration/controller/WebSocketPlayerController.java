@@ -5,6 +5,7 @@ import hello.integration.repository.MusicStateDTO;
 import hello.integration.repository.PlayerDTO;
 import hello.integration.service.MemberService;
 import hello.integration.service.MusicStateService;
+import hello.integration.service.NotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -29,6 +30,9 @@ public class WebSocketPlayerController {
 
     @Autowired
     private MemberService memberService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // 상수 정의
     private static final long RATE_LIMIT_MS = 16; // 약 60fps
@@ -220,6 +224,12 @@ public class WebSocketPlayerController {
                 System.currentTimeMillis()
         });
         log.debug("Current players after join: {}", players);
+
+        notificationService.sendNotification(
+                "새로운 접속",
+                player.getNickname() + "님이 KwanghunWorld 에 입장했습니다!"
+        );
+
         return new HashMap<>(players);
     }
 

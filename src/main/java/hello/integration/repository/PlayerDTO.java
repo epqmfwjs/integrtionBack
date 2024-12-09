@@ -20,7 +20,8 @@ public class PlayerDTO {
     private double rotation;
     private int characterId;
     private String modelPath;
-    private long timestamp;  // 추가
+    private long timestamp;
+    private boolean needsNotification = true;
 }
 
 
