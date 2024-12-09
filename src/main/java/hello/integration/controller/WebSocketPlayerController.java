@@ -227,7 +227,7 @@ public class WebSocketPlayerController {
         });
         log.debug("Current players after join: {}", players);
         Date now = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm");
         String formattedDate = dateFormat.format(now);
 
         notificationService.sendNotification(
@@ -242,7 +242,7 @@ public class WebSocketPlayerController {
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handleLeave(PlayerDTO player) {
         Date now = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm");
         String formattedDate = dateFormat.format(now);
 
         System.out.println("종료메시지 : " + player.toString());
