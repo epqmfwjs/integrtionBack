@@ -14,6 +14,8 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -224,10 +226,13 @@ public class WebSocketPlayerController {
                 System.currentTimeMillis()
         });
         log.debug("Current players after join: {}", players);
+        Date now = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
+        String formattedDate = dateFormat.format(now);
 
         notificationService.sendNotification(
                 "새로운 접속",
-                player.getNickname() + "님이 KwanghunWorld 에 입장했습니다!"
+                player.getNickname() + "님이 KwanghunWorld 에 입장했습니다! (" + formattedDate + ")"
         );
 
         return new HashMap<>(players);
@@ -236,10 +241,21 @@ public class WebSocketPlayerController {
     @MessageMapping("/leave")
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handleLeave(PlayerDTO player) {
+        Date now = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
+        String formattedDate = dateFormat.format(now);
+
+        System.out.println("종료메시지 : " + player.toString());
         String nickname = player.getNickname();
         players.remove(nickname);
         lastPositions.remove(nickname);
         memberService.deleteMember(nickname);
+
+        notificationService.sendNotification(
+                "플레이어 종료",
+                player.getNickname() + "님이 KwanghunWorld에서 퇴장하셨습니다! (" + formattedDate + ")"
+        );
+
         return new HashMap<>(players);
     }
 
