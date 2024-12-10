@@ -24,9 +24,8 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/member")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5000"}) // React 앱의 주소
-//@CrossOrigin(origins = {"http://gogolckh.ddns.net:3000", "http://gogolckh.ddns.net:5000"}) // React 앱의 주소
-//@CrossOrigin(origins = {"http://gogolckh.ddns.net:8010","http://gogolckh.ddns.net:10"}) // React 앱의 주소
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5000"})
+
 @Slf4j
 public class MemberController {
 
@@ -85,7 +84,6 @@ public class MemberController {
 
     @GetMapping("/me")
     public ResponseEntity<JoinResponsDTO> getCurrentMember(@RequestParam String nickname, HttpSession session) {
-        //System.out.println("/me 에는 옴  세션아이디는? : " + session.toString());
         log.info("GET /me 요청 받음");
         log.info("요청 닉네임: {}", nickname);
 
@@ -104,33 +102,6 @@ public class MemberController {
         log.info("응답 데이터: {}", response);
         return ResponseEntity.ok(response);
     }
-
-
-//    @GetMapping("/me")
-//    public ResponseEntity<JoinResponsDTO> getCurrentMember(
-//            @RequestParam String nickname,
-//            HttpSession session,
-//            HttpServletResponse response) throws IOException {
-//        log.info("GET /me 요청 받음");
-//        log.info("요청 닉네임: {}", nickname);
-//
-//        Optional<Member> member = memberRepository.findByNickname(nickname);
-//        if (member.isEmpty()) {
-//            log.info("DB에서 멤버를 찾을 수 없음");
-//            // HttpServletResponse로 리다이렉트
-//            response.sendRedirect("http://gogolckh.ddns.net:10");
-//            return null;
-//        }
-//
-//        JoinResponsDTO responseDTO = JoinResponsDTO.builder()
-//                .nickname(member.get().getNickname())
-//                .characterId(member.get().getCharacterId())
-//                .modelPath(member.get().getModelPath())
-//                .build();
-//
-//        log.info("응답 데이터: {}", responseDTO);
-//        return ResponseEntity.ok(responseDTO);
-//    }
 
     @GetMapping("/character-status")
     public ResponseEntity<Map<Integer, Boolean>> getCharacterStatus() {

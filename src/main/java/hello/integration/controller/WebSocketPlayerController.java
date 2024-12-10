@@ -47,58 +47,6 @@ public class WebSocketPlayerController {
     private final Map<String, String> sessionNicknames = new ConcurrentHashMap<>();
     private final Map<String, long[]> lastPositions = new ConcurrentHashMap<>();
 
-
-// -------------------------밑으로 기존코드 -------------------------------------
-
-//    @MessageMapping("/position")
-//    @SendTo("/topic/players")
-//    public Map<String, PlayerDTO> handlePosition(PlayerDTO player, SimpMessageHeaderAccessor headerAccessor) {
-//        String nickname = player.getNickname();
-//        long currentTime = System.currentTimeMillis();
-//
-//
-//        // 기존 플레이어 정보 가져오기
-//        PlayerDTO existingPlayer = players.get(nickname);
-//        if (existingPlayer != null) {
-//            // 기존 정보 유지하면서 새로운 정보 업데이트
-//            player.setModelPath(existingPlayer.getModelPath());
-//            player.setCharacterId(existingPlayer.getCharacterId());
-//        }
-//
-//        player.setTimestamp(currentTime);
-//
-//        // Rate limiting check
-//        long[] lastPosition = lastPositions.get(nickname);
-//
-//        if (lastPosition != null) {
-//            if (currentTime - lastPosition[3] < RATE_LIMIT_MS) {
-//                return null;
-//            }
-//
-//            if (!hasSignificantChange(
-//                    new double[]{lastPosition[0], lastPosition[1], lastPosition[2]},
-//                    player.getPosition())) {
-//                return null;
-//            }
-//        }
-//
-//        lastPositions.put(nickname, new long[]{
-//                Double.doubleToLongBits(player.getPosition()[0]),
-//                Double.doubleToLongBits(player.getPosition()[1]),
-//                Double.doubleToLongBits(player.getPosition()[2]),
-//                currentTime
-//        });
-//
-//        players.put(nickname, player);
-//        System.out.println("포지션 메시지 : " + player.toString());
-//        log.debug("Players map content: {}", players);
-//        return new HashMap<>(players);
-//    }
-//----------------------------------위로는 기존코드-----------------------------------------
-
-
-//-----------------------------------------밑으로는 수정코드------------------------------------------------------
-
     @MessageMapping("/position")
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handlePosition(PlayerDTO player, SimpMessageHeaderAccessor headerAccessor) {
@@ -131,18 +79,6 @@ public class WebSocketPlayerController {
             player.setModelPath(existingPlayer.getModelPath());
             player.setCharacterId(existingPlayer.getCharacterId());
         }
-
-        // Rate limiting과 위치 변화 확인
-//        long[] lastPosition = lastPositions.get(nickname);
-//        if (lastPosition != null) {
-//            if ((currentTime - lastPosition[4]) / 1_000_000 < RATE_LIMIT_MS) {
-//                return null;
-//            }
-//
-//            if (!hasSignificantMovement(player, lastPosition)) {
-//                return null;
-//            }
-//        }
 
         // 5개 요소를 가진 배열로 수정 (x, y, z, rotation, timestamp)
         lastPositions.put(nickname, new long[]{
@@ -181,7 +117,6 @@ public class WebSocketPlayerController {
         return false;
     }
 
-//-----------------------------------------위로는 수정코드------------------------------------------------------
     private boolean hasSignificantChange(double[] oldPos, double[] newPos) {
         return Math.abs(oldPos[0] - newPos[0]) > POSITION_THRESHOLD ||
                 Math.abs(oldPos[1] - newPos[1]) > POSITION_THRESHOLD ||
@@ -205,9 +140,7 @@ public class WebSocketPlayerController {
         lastPositions.get(player.getNickname())[3] = Double.doubleToLongBits(player.getRotation());
         lastPositions.get(player.getNickname())[4] = System.currentTimeMillis();
 
-        // 위로는 수정코드---------
 
-        // Send current music state
         MusicStateDTO currentMusic = musicStateService.getCurrentState();
         if (currentMusic != null) {
             simpMessagingTemplate.convertAndSendToUser(
