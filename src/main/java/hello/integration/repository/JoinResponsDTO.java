@@ -15,11 +15,4 @@ public class JoinResponsDTO {
     private String nickname;
     private int characterId;
     private String modelPath;
-
-//    public static Object builder(String nickname, int characterId, String modelPath) {
-//        this.nickname = nickname;
-//        this.characterId = characterId;
-//        this.modelPath = modelPath;
-//
-//    }
 }

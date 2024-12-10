@@ -9,6 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NicknameCheckRequestDTO {
-
     private String nickname;
 }
