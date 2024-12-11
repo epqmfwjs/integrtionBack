@@ -2,10 +2,15 @@ package hello.integration.service;
 
 import hello.integration.domain.Member;
 import hello.integration.domain.MemberRepository;
+import hello.integration.repository.JoinRequestDTO;
+import hello.integration.repository.JoinResponsDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -64,5 +69,20 @@ public class MemberService {
             log.error("Error deleting member: {}", nickname, e);
             throw new RuntimeException("Failed to delete member", e);
         }
+    }
+
+    public List<JoinResponsDTO> getAllConnectedUsers() {
+        return memberRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private JoinResponsDTO convertToDTO(Member member) {
+        return JoinResponsDTO.builder()
+                .nickname(member.getNickname())
+                .characterId(member.getCharacterId())
+                .modelPath(member.getModelPath())
+                .build();
     }
 }

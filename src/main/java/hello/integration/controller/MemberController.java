@@ -40,10 +40,7 @@ public class MemberController {
 
     @PostMapping("/check-nickname")
     public ResponseEntity<?> checkNickname(@RequestBody NicknameCheckRequestDTO request) {
-        boolean isAvailable = false;
-        if(memberService.isNicknameAvailable(request.getNickname()) && !request.getNickname().equals("관리자")){
-            isAvailable = true;
-        }
+        boolean isAvailable = memberService.isNicknameAvailable(request.getNickname()) && !request.getNickname().equals("관리자");
         System.out.println("결과 : " + isAvailable);
         return ResponseEntity.ok(new NicknameCheckResponseDTO(isAvailable));
     }
@@ -124,6 +121,28 @@ public class MemberController {
 
         return ResponseEntity.ok(status);
     }
-
+    // 앱에서 접속유저 확인
+    @GetMapping("/connected")
+    public ResponseEntity<List<JoinResponsDTO>> getConnectedUsers() {
+        try {
+            List<JoinResponsDTO> users = memberService.getAllConnectedUsers();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            log.error("Error fetching connected users", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    // 앱에서 접속유저 퇴장
+    @DeleteMapping("/{nickname}")
+    public ResponseEntity<String> deleteMember(@PathVariable String nickname) {
+        try {
+            memberService.deleteMember(nickname);
+            return ResponseEntity.ok("Member deleted successfully");
+        } catch (Exception e) {
+            log.error("Failed to delete member: {}", nickname, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to delete member: " + e.getMessage());
+        }
+    }
 
 }
