@@ -40,7 +40,11 @@ public class MemberController {
 
     @PostMapping("/check-nickname")
     public ResponseEntity<?> checkNickname(@RequestBody NicknameCheckRequestDTO request) {
-        boolean isAvailable = memberService.isNicknameAvailable(request.getNickname());
+        boolean isAvailable = false;
+        if(memberService.isNicknameAvailable(request.getNickname()) && !request.getNickname().equals("관리자")){
+            isAvailable = true;
+        }
+        System.out.println("결과 : " + isAvailable);
         return ResponseEntity.ok(new NicknameCheckResponseDTO(isAvailable));
     }
 
@@ -55,8 +59,8 @@ public class MemberController {
                         .body("이미 사용 중인 캐릭터입니다.");
             }
 
-            // 닉네임이 이미 사용 중인지 확인
-            if (!memberService.isNicknameAvailable(member.getNickname())) {
+            // 닉네임이 이미 사용 중인지 다시 한번 확인
+            if (!memberService.isNicknameAvailable(member.getNickname()) && member.getNickname().equals("관리자")) {
                 return ResponseEntity
                         .status(HttpStatus.CONFLICT)
                         .body("이미 사용 중인 닉네임입니다.");
@@ -120,4 +124,6 @@ public class MemberController {
 
         return ResponseEntity.ok(status);
     }
+
+
 }
