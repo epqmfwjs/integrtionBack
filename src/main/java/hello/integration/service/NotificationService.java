@@ -6,61 +6,81 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
 public class NotificationService {
     @Autowired
     private FirebaseMessaging firebaseMessaging;
-
-    private final Map<String, String> userTokens = new ConcurrentHashMap<>();
+    @Value("${ADMIN_DEVICE_ID}")
+    private String deviceId;
+    private String currentToken = null;
 
     public void registerToken(String userId, String token) {
         log.info("Starting token registration - UserId: {}, Token: {}", userId, token);
-        userTokens.put(userId, token);
-        log.info("Token registered successfully. Current token count: {}", userTokens.size());
+
+        // deviceId가 다르면 디바이스의 토큰 등록 시도를 막음
+        if (!deviceId.equals(userId)) {
+            log.warn("Attempted to register token for non-admin device. UserId: {}", userId);
+            return;
+        }
+
+        // 현재 토큰과 같다면 불필요한 업데이트 방지
+        if (token.equals(currentToken)) {
+            log.info("Token already registered and unchanged. Skipping update.");
+            return;
+        }
+
+        // 새로운 토큰 저장
+        currentToken = token;
+        log.info("New token registered successfully for admin device");
     }
 
     public void sendNotification(String title, String body) {
         log.info("Attempting to send FCM notification - Title: '{}', Body: '{}'", title, body);
-        if (userTokens.isEmpty()) {
-            log.warn("No FCM tokens registered. Cannot send notifications.");
+
+        if (currentToken == null) {
+            log.warn("No FCM token registered. Cannot send notification.");
             return;
         }
 
-        for (Map.Entry<String, String> entry : userTokens.entrySet()) {
-            String userId = entry.getKey();
-            String token = entry.getValue();
+        try {
+            Message message = Message.builder()
+                    .setToken(currentToken)
+                    .setNotification(Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build())
+                    .build();
 
-            try {
-                Message message = Message.builder()
-                        .setToken(token)
-                        .setNotification(Notification.builder()
-                                .setTitle(title)
-                                .setBody(body)
-                                .build())
-                        .build();
-
-                String response = firebaseMessaging.send(message);
-                log.info("Successfully sent FCM message to userId: {}, Response: {}",
-                        userId, response);
-            } catch (FirebaseMessagingException e) {
-                log.error("Failed to send FCM notification", e);
+            String response = firebaseMessaging.send(message);
+            log.info("Successfully sent FCM message to admin device. Response: {}", response);
+        } catch (FirebaseMessagingException e) {
+            if (isTokenInvalidError(e)) {
+                log.warn("FCM token is invalid or expired. Clearing current token.");
+                currentToken = null;
             }
+            log.error("Failed to send FCM notification", e);
         }
     }
 
-    public Map<String, String> getCurrentTokens() {
-        return new HashMap<>(userTokens);
+    private boolean isTokenInvalidError(FirebaseMessagingException e) {
+        return e.getMessagingErrorCode() != null &&
+                (e.getMessagingErrorCode().toString().equals("UNREGISTERED") ||
+                        e.getMessagingErrorCode().toString().equals("INVALID_ARGUMENT"));
+    }
+
+    public boolean hasValidToken() {
+        return currentToken != null;
+    }
+
+    // 필요한 경우 현재 토큰 정보 조회 (디버깅 등의 목적)
+    public String getCurrentTokenInfo() {
+        if (currentToken == null) {
+            return "No token registered";
+        }
+        return "Token registered for admin device";
     }
 }
