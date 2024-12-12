@@ -23,7 +23,6 @@ public class Member {
     private String modelPath;
 
     @Builder
-
     public Member(String nickname, int characterId, String modelPath) {
         this.nickname = nickname;
         this.characterId = characterId;
