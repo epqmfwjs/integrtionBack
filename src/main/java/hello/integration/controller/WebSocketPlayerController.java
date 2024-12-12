@@ -163,12 +163,13 @@ public class WebSocketPlayerController {
         Date now = new Date();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm");
         String formattedDate = dateFormat.format(now);
-
-        notificationService.sendNotification(
-                "새로운 접속",
-                player.getNickname() + "님이 KwanghunWorld 에 입장했습니다! (" + formattedDate + ")"
-        );
-
+        
+        if(!player.getNickname().equals("관리자")){
+            notificationService.sendNotification(
+                    "새로운 접속",
+                    player.getNickname() + "님이 KwanghunWorld 에 입장했습니다! (" + formattedDate + ")"
+            );
+        }
         return new HashMap<>(players);
     }
 
@@ -185,11 +186,12 @@ public class WebSocketPlayerController {
         lastPositions.remove(nickname);
         memberService.deleteMember(nickname);
 
-        notificationService.sendNotification(
-                "플레이어 종료",
-                player.getNickname() + "님이 KwanghunWorld에서 퇴장하셨습니다! (" + formattedDate + ")"
-        );
-
+        if(!player.getNickname().equals("관리자")) {
+            notificationService.sendNotification(
+                    "플레이어 종료",
+                    player.getNickname() + "님이 KwanghunWorld에서 퇴장하셨습니다! (" + formattedDate + ")"
+            );
+        }
         return new HashMap<>(players);
     }
 
