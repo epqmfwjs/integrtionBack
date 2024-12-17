@@ -38,10 +38,9 @@ public class WebSocketPlayerController {
     private NotificationService notificationService;
 
     // 상수 정의
-    private static final long RATE_LIMIT_MS = 16; // 약 60fps
+    private static final long RATE_LIMIT_NS = 16_000_000; // 16ms를 나노초로 변환
     private static final double POSITION_THRESHOLD = 0.01; // 1cm
     private static final double ROTATION_THRESHOLD = 0.01; // 약 0.57도
-
     private static final int POSITION_ARRAY_SIZE = 5; // x, y, z, rotation, timestamp
 
     private final Map<String, PlayerDTO> players = new ConcurrentHashMap<>();
@@ -54,45 +53,43 @@ public class WebSocketPlayerController {
         String nickname = player.getNickname();
         long currentTime = System.nanoTime();
 
-        // 배열이 없거나 크기가 잘못된 경우 새로 초기화
-        if (lastPositions.get(nickname) == null ||
-                lastPositions.get(nickname).length != POSITION_ARRAY_SIZE) {
-            lastPositions.put(nickname, new long[POSITION_ARRAY_SIZE]);
-        }
-
-        long[] lastPosition = lastPositions.get(nickname);
+        long[] lastPosition = lastPositions.computeIfAbsent(nickname,
+                k -> new long[POSITION_ARRAY_SIZE]);
 
         // Rate limiting check
-        if (currentTime - lastPosition[4] < RATE_LIMIT_MS) {
+        if (currentTime - lastPosition[4] < RATE_LIMIT_NS) {
             return null;
         }
 
-        // 새로운 위치 데이터 저장
-        lastPosition[0] = Double.doubleToLongBits(player.getPosition()[0]);
-        lastPosition[1] = Double.doubleToLongBits(player.getPosition()[1]);
-        lastPosition[2] = Double.doubleToLongBits(player.getPosition()[2]);
-        lastPosition[3] = Double.doubleToLongBits(player.getRotation());
-        lastPosition[4] = currentTime;
+        // 의미있는 움직임 체크
+        if (!hasSignificantMovement(player, lastPosition)) {
+            return null;
+        }
 
         // 기존 플레이어 정보 유지
         PlayerDTO existingPlayer = players.get(nickname);
         if (existingPlayer != null) {
+
             player.setModelPath(existingPlayer.getModelPath());
             player.setCharacterId(existingPlayer.getCharacterId());
         }
 
-        // 5개 요소를 가진 배열로 수정 (x, y, z, rotation, timestamp)
-        lastPositions.put(nickname, new long[]{
+        // 위치 데이터 업데이트
+        updatePositionData(player, currentTime, lastPosition);
+
+        player.setTimestamp(currentTime);
+        players.put(nickname, player);
+        return new HashMap<>(players);
+    }
+
+    private void updatePositionData(PlayerDTO player, long currentTime, long[] lastPosition) {
+        lastPositions.put(player.getNickname(), new long[]{
                 Double.doubleToLongBits(player.getPosition()[0]),
                 Double.doubleToLongBits(player.getPosition()[1]),
                 Double.doubleToLongBits(player.getPosition()[2]),
                 Double.doubleToLongBits(player.getRotation()),
                 currentTime
         });
-
-        player.setTimestamp(currentTime);
-        players.put(nickname, player);
-        return new HashMap<>(players);
     }
 
     private boolean hasSignificantMovement(PlayerDTO newPlayer, long[] lastPosition) {
@@ -118,30 +115,23 @@ public class WebSocketPlayerController {
         return false;
     }
 
-    private boolean hasSignificantChange(double[] oldPos, double[] newPos) {
-        return Math.abs(oldPos[0] - newPos[0]) > POSITION_THRESHOLD ||
-                Math.abs(oldPos[1] - newPos[1]) > POSITION_THRESHOLD ||
-                Math.abs(oldPos[2] - newPos[2]) > POSITION_THRESHOLD;
-    }
-
     @MessageMapping("/join")
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handleJoin(PlayerDTO player, SimpMessageHeaderAccessor headerAccessor) {
-        System.out.println("조인메시지 : " + player.toString());
         String sessionId = headerAccessor.getSessionId();
-        long currentTime = System.currentTimeMillis();
-        player.setTimestamp(currentTime);
+        long currentTime = System.nanoTime();
+
         log.info("New player joined - Session ID: {}, Nickname: {}", sessionId, player.getNickname());
 
-        // 5개 요소를 가진 배열로 초기화------------------------------수정(추가)
-        lastPositions.put(player.getNickname(), new long[POSITION_ARRAY_SIZE]);
-        lastPositions.get(player.getNickname())[0] = Double.doubleToLongBits(player.getPosition()[0]);
-        lastPositions.get(player.getNickname())[1] = Double.doubleToLongBits(player.getPosition()[1]);
-        lastPositions.get(player.getNickname())[2] = Double.doubleToLongBits(player.getPosition()[2]);
-        lastPositions.get(player.getNickname())[3] = Double.doubleToLongBits(player.getRotation());
-        lastPositions.get(player.getNickname())[4] = System.currentTimeMillis();
+        // 초기 위치 데이터 설정
+        long[] positionData = new long[POSITION_ARRAY_SIZE];
+        updatePositionData(player, currentTime, positionData);
 
+        player.setTimestamp(currentTime);
+        sessionNicknames.put(sessionId, player.getNickname());
+        players.put(player.getNickname(), player);
 
+        // 현재 음악 상태 전송
         MusicStateDTO currentMusic = musicStateService.getCurrentState();
         if (currentMusic != null) {
             simpMessagingTemplate.convertAndSendToUser(
@@ -151,47 +141,39 @@ public class WebSocketPlayerController {
             );
         }
 
-        sessionNicknames.put(sessionId, player.getNickname());
-        players.put(player.getNickname(), player);
-        lastPositions.put(player.getNickname(), new long[]{
-                Double.doubleToLongBits(player.getPosition()[0]),
-                Double.doubleToLongBits(player.getPosition()[1]),
-                Double.doubleToLongBits(player.getPosition()[2]),
-                System.currentTimeMillis()
-        });
-        log.debug("Current players after join: {}", players);
-        Date now = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm");
-        String formattedDate = dateFormat.format(now);
-        
-        if(!player.getNickname().equals("관리자")){
+        // 입장 알림 전송
+        if (!player.getNickname().equals("관리자")) {
+            String formattedDate = new SimpleDateFormat("yyyy.MM.dd HH:mm")
+                    .format(new Date());
             notificationService.sendNotification(
                     "새로운 접속",
                     player.getNickname() + "님이 KwanghunWorld 에 입장했습니다! (" + formattedDate + ")"
             );
         }
+
         return new HashMap<>(players);
     }
 
     @MessageMapping("/leave")
     @SendTo("/topic/players")
     public Map<String, PlayerDTO> handleLeave(PlayerDTO player) {
-        Date now = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm");
-        String formattedDate = dateFormat.format(now);
-
-        System.out.println("종료메시지 : " + player.toString());
         String nickname = player.getNickname();
+
+        // 플레이어 데이터 정리
         players.remove(nickname);
         lastPositions.remove(nickname);
         memberService.deleteMember(nickname);
 
-        if(!player.getNickname().equals("관리자")) {
+        // 퇴장 알림 전송
+        if (!nickname.equals("관리자")) {
+            String formattedDate = new SimpleDateFormat("yyyy.MM.dd HH:mm")
+                    .format(new Date());
             notificationService.sendNotification(
                     "플레이어 종료",
-                    player.getNickname() + "님이 KwanghunWorld에서 퇴장하셨습니다! (" + formattedDate + ")"
+                    nickname + "님이 KwanghunWorld에서 퇴장하셨습니다! (" + formattedDate + ")"
             );
         }
+
         return new HashMap<>(players);
     }
 
@@ -218,6 +200,4 @@ public class WebSocketPlayerController {
         }
         return message;
     }
-
-
 }
